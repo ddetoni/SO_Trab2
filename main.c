@@ -30,6 +30,26 @@ int twoByteToInt(unsigned char* a){
     return (int) (a[1] <<8  | a[0]) ;	
 }
 
+int printBootSector(bootsector * bs){
+	
+	printf("	jmp to bootstrap = %zx %zx %zx\n", bs->jmp[0], bs->jmp[1], bs->jmp[2]);
+	printf("	oem name/version = %s\n", bs->oem);
+	printf("	Number of bytes per sector = %d \n", twoByteToInt(bs->bytesInSector));
+	printf("	Number of sectors per cluster = %d \n", bs->sectorInCluster[0]);
+	printf("	Number of reserved sectors = %d \n", twoByteToInt(bs->numResSector));
+	printf("	Number of FAT copies = %d \n", bs->numFatCopies[0]);
+	printf("	Number of root directory entries = %d \n", twoByteToInt(bs->numRootDirs));
+	printf("	Total number of sectors in the Filesystem = %d \n", twoByteToInt(bs->numSectFS));
+	printf("	Media descriptor type = %zx \n", bs->mediaDesc[0]);
+	printf("	Number of sectors per FAT = %d \n", twoByteToInt(bs->numSectFat));
+	printf("	Number of sectors per track = %d \n", twoByteToInt(bs->numSectTrac));
+	printf("	Number of heads = %d \n", twoByteToInt(bs->numheads));
+	printf("	Numer of hidden sectors = %d \n", twoByteToInt(bs->numHiddenSect));
+	printf("	Signature = %zx %zx \n", bs->sig[0], bs->sig[1]);
+	
+	return 1;
+}
+
 int main(int argc, char** argv) {
     
     bootsector * bs = malloc(sizeof(bootsector));
@@ -37,7 +57,7 @@ int main(int argc, char** argv) {
  
     int bufsize = 512;
     
-    if(!(fat_file = fopen("discfat16","rb")))
+    if(!(fat_file = fopen("disco","rb")))
     {
         printf("The file can not be open.\n");
     }
@@ -59,7 +79,7 @@ int main(int argc, char** argv) {
     fread(bs->bootstrap, 480, 1, fat_file);
     fread(bs->sig, 2, 1, fat_file);	
     
-    printf("result=%zx\n", bs->sig[0]);
+    printBootSector(bs);
     
     return (EXIT_SUCCESS);
 }
