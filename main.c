@@ -31,17 +31,24 @@ int twoByteToInt(unsigned char* a){
     return (int) (a[1] <<8  | a[0]) ;	
 }
 
-int verifyFats(int fatSize, unsigned char* f0, unsigned char* f1){
+int verifyFats(int fatClusterSize, unsigned short* f0, unsigned short* f1){
 	int i;
 	
-	for(i=3; i < fatSize; i++){
+	for(i = 3; i < fatClusterSize; i++){
 		if(f0[i] != f1[i]){
-			printf("DIF %d:%d, %d", i, f0[i], f1[i]);
+			printf("DIF %d:%d, %d\n", i, f0[i], f1[i]);
 		}
 	}
 	
 	return 1;
 }
+
+int emptyBlocks(int fatSize, unsigned char* f0){
+	
+	return 1;
+}
+
+
 
 int printBootSector(bootsector * bs){
 	
@@ -68,7 +75,7 @@ int main(int argc, char** argv) {
     bootsector * bs = malloc(sizeof(bootsector));
     FILE *fat_file;
     
-    if(!(fat_file = fopen("disco","rb")))
+    if(!(fat_file = fopen("disco","r+")))
     {
         printf("The file can not be open.\n");
     }
@@ -93,7 +100,8 @@ int main(int argc, char** argv) {
     printBootSector(bs);
     
     int reservedRegion = twoByteToInt(bs->numResSector) * twoByteToInt(bs->bytesInSector);
-    int fatByteSize = twoByteToInt(bs->numSectFat) * twoByteToInt(bs->bytesInSector);
+    int fatByteSize = twoByteToInt(bs->numSectFat) * twoByteToInt(bs->bytesInSector);\
+    int fatClusterSize = fatByteSize/2;
     int fat0pos = reservedRegion;
     int fat1pos = reservedRegion + fatByteSize;
     
@@ -101,17 +109,21 @@ int main(int argc, char** argv) {
     printf("	FAT1 position = %d \n", fat1pos);
     
     fseek(fat_file, (off_t)fat0pos, SEEK_SET);
+   
+    unsigned short fat0[fatClusterSize];
+    unsigned short fat1[fatClusterSize];
     
-    unsigned char fat0[fatByteSize];
-    unsigned char fat1[fatByteSize];
+    fread(fat0, fatClusterSize, 2, fat_file);
+    fread(fat1, fatClusterSize, 2, fat_file);
+	
+	/*	
+	fseek(fat_file, fat0pos+9, SEEK_SET);
+	short cl[3] = {255, 255, 255};
+	fwrite(&cl, sizeof(short), sizeof(cl), fat_file);
+    //printf("fat0 = %zx  - fat1 = %zx \n", fat0[11], fat1[11]);
     
-    fread(fat0, fatByteSize, 1, fat_file);
-    fread(fat1, fatByteSize, 1, fat_file);
-    
-    //printf("fat0 = %zx %zx - fat1 = %zx %zx\n", fat0[1], fat0[0], fat1[1], fat1[0]);
-    
-    verifyFats(fatByteSize, fat0, fat1);
-    
+    verifyFats(fatClusterSize, fat0, fat1);
+    */
     
     return (EXIT_SUCCESS);
 }
