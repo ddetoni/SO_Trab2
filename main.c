@@ -31,36 +31,43 @@ int twoByteToInt(unsigned char* a){
     return (int) (a[1] <<8  | a[0]) ;	
 }
 
-int verifyFats(int fatSize, unsigned char* f0, unsigned char* f1){
-	int i;
+int verifyFats(int fatClusterSize, unsigned short* f0, unsigned short* f1){
+    int i;
 	
-	for(i=3; i < fatSize; i++){
-		if(f0[i] != f1[i]){
-			printf("DIF %d:%d, %d", i, f0[i], f1[i]);
-		}
-	}
+    for(i = 3; i < fatClusterSize; i++){
+            if(f0[i] != f1[i]){
+                    printf("DIF %d:%d, %d\n", i, f0[i], f1[i]);
+            }
+    }
 	
-	return 1;
+    return 1;
 }
+
+int emptyBlocks(int fatSize, unsigned char* f0){
+	
+    return 1;
+}
+
+
 
 int printBootSector(bootsector * bs){
 	
-	printf("	jmp to bootstrap = %zx %zx %zx\n", bs->jmp[0], bs->jmp[1], bs->jmp[2]);
-	printf("	oem name/version = %s\n", bs->oem);
-	printf("	Number of bytes per sector = %d \n", twoByteToInt(bs->bytesInSector));
-	printf("	Number of sectors per cluster = %d \n", bs->sectorInCluster[0]);
-	printf("	Number of reserved sectors = %d \n", twoByteToInt(bs->numResSector));
-	printf("	Number of FAT copies = %d \n", bs->numFatCopies[0]);
-	printf("	Number of root directory entries = %d \n", twoByteToInt(bs->numRootDirs));
-	printf("	Total number of sectors in the Filesystem = %d \n", twoByteToInt(bs->numSectFS));
-	printf("	Media descriptor type = %zx \n", bs->mediaDesc[0]);
-	printf("	Number of sectors per FAT = %d \n", twoByteToInt(bs->numSectFat));
-	printf("	Number of sectors per track = %d \n", twoByteToInt(bs->numSectTrac));
-	printf("	Number of heads = %d \n", twoByteToInt(bs->numheads));
-	printf("	Numer of hidden sectors = %d \n", twoByteToInt(bs->numHiddenSect));
-	printf("	Signature = %zx %zx \n", bs->sig[0], bs->sig[1]);
-	
-	return 1;
+    printf("	jmp to bootstrap = %zx %zx %zx\n", bs->jmp[0], bs->jmp[1], bs->jmp[2]);
+    printf("	oem name/version = %s\n", bs->oem);
+    printf("	Number of bytes per sector = %d \n", twoByteToInt(bs->bytesInSector));
+    printf("	Number of sectors per cluster = %d \n", bs->sectorInCluster[0]);
+    printf("	Number of reserved sectors = %d \n", twoByteToInt(bs->numResSector));
+    printf("	Number of FAT copies = %d \n", bs->numFatCopies[0]);
+    printf("	Number of root directory entries = %d \n", twoByteToInt(bs->numRootDirs));
+    printf("	Total number of sectors in the Filesystem = %d \n", twoByteToInt(bs->numSectFS));
+    printf("	Media descriptor type = %zx \n", bs->mediaDesc[0]);
+    printf("	Number of sectors per FAT = %d \n", twoByteToInt(bs->numSectFat));
+    printf("	Number of sectors per track = %d \n", twoByteToInt(bs->numSectTrac));
+    printf("	Number of heads = %d \n", twoByteToInt(bs->numheads));
+    printf("	Numer of hidden sectors = %d \n", twoByteToInt(bs->numHiddenSect));
+    printf("	Signature = %zx %zx \n", bs->sig[0], bs->sig[1]);
+
+    return 1;
 }
 
 int main(int argc, char** argv) {
@@ -68,7 +75,7 @@ int main(int argc, char** argv) {
     bootsector * bs = malloc(sizeof(bootsector));
     FILE *fat_file;
     
-    if(!(fat_file = fopen("discfat16","rb")))
+    if(!(fat_file = fopen("discfat16","r+")))
     {
         printf("The file can not be open.\n");
     }
@@ -93,24 +100,30 @@ int main(int argc, char** argv) {
     printBootSector(bs);
     
     int reservedRegion = twoByteToInt(bs->numResSector) * twoByteToInt(bs->bytesInSector);
-    int fatByteSize = twoByteToInt(bs->numSectFat) * twoByteToInt(bs->bytesInSector);
+    int fatByteSize = twoByteToInt(bs->numSectFat) * twoByteToInt(bs->bytesInSector);\
+    int fatClusterSize = fatByteSize/2;
     int fat0pos = reservedRegion;
     int fat1pos = reservedRegion + fatByteSize;
     
     printf("\n	FAT0 position = %d \n", fat0pos);
     printf("	FAT1 position = %d \n", fat1pos);
     
+    //Test
+    /*
+    fseek(fat_file, fat0pos+9, SEEK_SET);
+    short cl[3] = {255, 255, 255};
+    fwrite(&cl, sizeof(short), sizeof(cl), fat_file);
+    */
+    
     fseek(fat_file, (off_t)fat0pos, SEEK_SET);
+   
+    unsigned short fat0[fatClusterSize];
+    unsigned short fat1[fatClusterSize];
     
-    unsigned char fat0[fatByteSize];
-    unsigned char fat1[fatByteSize];
-    
-    fread(fat0, fatByteSize, 1, fat_file);
-    fread(fat1, fatByteSize, 1, fat_file);
-    
-    //printf("fat0 = %zx %zx - fat1 = %zx %zx\n", fat0[1], fat0[0], fat1[1], fat1[0]);
-    
-    verifyFats(fatByteSize, fat0, fat1);
+    fread(fat0, fatClusterSize, 2, fat_file);
+    fread(fat1, fatClusterSize, 2, fat_file);
+	
+    verifyFats(fatClusterSize, fat0, fat1);
     
     
     return (EXIT_SUCCESS);
