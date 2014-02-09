@@ -20,4 +20,5 @@
 # Other
 .dep.inc
 discfat16
+disco
 sample.fat16
