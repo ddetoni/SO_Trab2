@@ -31,6 +31,18 @@ int twoByteToInt(unsigned char* a){
     return (int) (a[1] <<8  | a[0]) ;	
 }
 
+int verifyFats(int fatSize, unsigned char* f0, unsigned char* f1){
+	int i;
+	
+	for(i=3; i < fatSize; i++){
+		if(f0[i] != f1[i]){
+			printf("DIF %d:%d, %d", i, f0[i], f1[i]);
+		}
+	}
+	
+	return 1;
+}
+
 int printBootSector(bootsector * bs){
 	
 	printf("	jmp to bootstrap = %zx %zx %zx\n", bs->jmp[0], bs->jmp[1], bs->jmp[2]);
@@ -56,7 +68,7 @@ int main(int argc, char** argv) {
     bootsector * bs = malloc(sizeof(bootsector));
     FILE *fat_file;
     
-    if(!(fat_file = fopen("discfat16","rb")))
+    if(!(fat_file = fopen("disco","rb")))
     {
         printf("The file can not be open.\n");
     }
@@ -96,7 +108,9 @@ int main(int argc, char** argv) {
     fread(fat0, fatByteSize, 1, fat_file);
     fread(fat1, fatByteSize, 1, fat_file);
     
-    printf("fat0 = %zx %zx - fat1 = %zx %zx\n", fat0[1], fat0[0], fat1[1], fat1[0]);
+    //printf("fat0 = %zx %zx - fat1 = %zx %zx\n", fat0[1], fat0[0], fat1[1], fat1[0]);
+    
+    verifyFats(fatByteSize, fat0, fat1);
     
     
     return (EXIT_SUCCESS);
