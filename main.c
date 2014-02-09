@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     bootsector * bs = malloc(sizeof(bootsector));
     FILE *fat_file;
     
-    if(!(fat_file = fopen("disco","rb")))
+    if(!(fat_file = fopen("discfat16","rb")))
     {
         printf("The file can not be open.\n");
     }
