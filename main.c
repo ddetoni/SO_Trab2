@@ -48,7 +48,13 @@ int emptyBlocks(int fatSize, unsigned char* f0){
     return 1;
 }
 
-
+int copyFat0(int fatPos,int fatClusterSize, FILE* file, unsigned short * f1){
+    
+    fseek(file, fatPos, SEEK_SET);
+    int ret = fwrite(f1, 2, fatClusterSize, file);
+    
+    return 1;
+}
 
 int printBootSector(bootsector * bs){
 	
@@ -112,10 +118,10 @@ int main(int argc, char** argv) {
     /*
     fseek(fat_file, fat0pos+9, SEEK_SET);
     short cl[3] = {255, 255, 255};
-    fwrite(&cl, sizeof(short), sizeof(cl), fat_file);
+    fwrite(cl, sizeof(short), 3, fat_file);
     */
     
-    fseek(fat_file, (off_t)fat0pos, SEEK_SET);
+    fseek(fat_file, fat0pos, SEEK_SET);
    
     unsigned short fat0[fatClusterSize];
     unsigned short fat1[fatClusterSize];
@@ -125,6 +131,7 @@ int main(int argc, char** argv) {
 	
     verifyFats(fatClusterSize, fat0, fat1);
     
+    //copyFat0(fat0pos, fatClusterSize, fat_file, fat1);
     
     return (EXIT_SUCCESS);
 }
