@@ -43,7 +43,18 @@ int verifyFats(int fatClusterSize, unsigned short* f0, unsigned short* f1){
     return 1;
 }
 
-int emptyBlocks(int fatSize, unsigned char* f0){
+int emptyBlocks(int fatSize, unsigned short* fat){
+	int i, flag = 0;	
+	
+	for(i=3; i < fatSize; i++){
+		if(fat[i] == 0 && flag == 0){
+			printf("LIVRE %d", i);
+			flag = 1;
+		}else if(fat[i] == 0 && flag > 0){
+			printf(", %d", i);
+		}
+	}
+	printf("\n");
 	
     return 1;
 }
@@ -89,7 +100,7 @@ int main(int argc, char** argv) {
     bootsector * bs = malloc(sizeof(bootsector));
     FILE *fat_file;
     
-    if(!(fat_file = fopen("discfat16","r+")))
+    if(!(fat_file = fopen("disco","r+")))
     {
         printf("The file can not be open.\n");
     }
@@ -130,9 +141,11 @@ int main(int argc, char** argv) {
     fread(fat0, fatClusterSize, 2, fat_file);
     fread(fat1, fatClusterSize, 2, fat_file);
 	
-    verifyFats(fatClusterSize, fat0, fat1);
+    //verifyFats(fatClusterSize, fat0, fat1);
     
     //copyFat(fat0pos, fatClusterSize, fat_file, fat1);
+    
+    emptyBlocks(fatClusterSize, fat0);
     
     return (EXIT_SUCCESS);
 }
