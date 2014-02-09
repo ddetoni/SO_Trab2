@@ -7,23 +7,24 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 typedef struct {
-	unsigned char jmp[3];			//0-2
-	unsigned char oem[8];			//3-10
-	unsigned char bytesInSector[2] ;		//11-12
-	unsigned char sectorInCluster[1] ;		//13
-	unsigned char numResSector[2];		//14-15
-	unsigned char numFatCopies[1];		//16
-	unsigned char numRootDirs[2];		//17-18
-	unsigned char numSectFS[2];		//19-20
-	unsigned char mediaDesc[1];			//21
-	unsigned char numSectFat[2];		//22-23
-	unsigned char numSectTrac[2];		//24-25
-	unsigned char numheads [2];		//26-27
-	unsigned char numHiddenSect[2];		//28-29
-	unsigned char bootstrap[480];		//30-509
-	unsigned char sig[2];			//510-511  sig= 55 aa
+	unsigned char jmp[3];
+	unsigned char oem[8];
+	unsigned char bytesInSector[2];
+	unsigned char sectorInCluster[1];
+	unsigned char numResSector[2];
+	unsigned char numFatCopies[1];
+	unsigned char numRootDirs[2];
+	unsigned char numSectFS[2];
+	unsigned char mediaDesc[1];
+	unsigned char numSectFat[2];
+	unsigned char numSectTrac[2];
+	unsigned char numheads [2];
+	unsigned char numHiddenSect[2];
+	unsigned char bootstrap[480];
+	unsigned char sig[2];
 }bootsector;
 
 int twoByteToInt(unsigned char* a){	
@@ -54,10 +55,8 @@ int main(int argc, char** argv) {
     
     bootsector * bs = malloc(sizeof(bootsector));
     FILE *fat_file;
- 
-    int bufsize = 512;
     
-    if(!(fat_file = fopen("disco","rb")))
+    if(!(fat_file = fopen("discfat16","rb")))
     {
         printf("The file can not be open.\n");
     }
@@ -80,6 +79,25 @@ int main(int argc, char** argv) {
     fread(bs->sig, 2, 1, fat_file);	
     
     printBootSector(bs);
+    
+    int reservedRegion = twoByteToInt(bs->numResSector) * twoByteToInt(bs->bytesInSector);
+    int fatByteSize = twoByteToInt(bs->numSectFat) * twoByteToInt(bs->bytesInSector);
+    int fat0pos = reservedRegion;
+    int fat1pos = reservedRegion + fatByteSize;
+    
+    printf("\n	FAT0 position = %d \n", fat0pos);
+    printf("	FAT1 position = %d \n", fat1pos);
+    
+    fseek(fat_file, (off_t)fat0pos, SEEK_SET);
+    
+    unsigned char fat0[fatByteSize];
+    unsigned char fat1[fatByteSize];
+    
+    fread(fat0, fatByteSize, 1, fat_file);
+    fread(fat1, fatByteSize, 1, fat_file);
+    
+    printf("fat0 = %zx %zx - fat1 = %zx %zx\n", fat0[1], fat0[0], fat1[1], fat1[0]);
+    
     
     return (EXIT_SUCCESS);
 }
