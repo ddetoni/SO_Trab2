@@ -48,10 +48,18 @@ int emptyBlocks(int fatSize, unsigned char* f0){
     return 1;
 }
 
-int copyFat0(int fatPos,int fatClusterSize, FILE* file, unsigned short * f1){
+int copyFat(int fatPos,int fatClusterSize, FILE* file, unsigned short * cfat){
     
     fseek(file, fatPos, SEEK_SET);
-    int ret = fwrite(f1, 2, fatClusterSize, file);
+    int ret = fwrite(cfat, 2, fatClusterSize, file);
+    
+    return 1;
+}
+
+int fatCorrupted(int fatPos, FILE* file){
+    fseek(file, fatPos+10, SEEK_SET);
+    short cl[3] = {255, 255, 255};
+    fwrite(cl, sizeof(short), 3, file);
     
     return 1;
 }
@@ -114,13 +122,6 @@ int main(int argc, char** argv) {
     printf("\n	FAT0 position = %d \n", fat0pos);
     printf("	FAT1 position = %d \n", fat1pos);
     
-    //Test
-    /*
-    fseek(fat_file, fat0pos+9, SEEK_SET);
-    short cl[3] = {255, 255, 255};
-    fwrite(cl, sizeof(short), 3, fat_file);
-    */
-    
     fseek(fat_file, fat0pos, SEEK_SET);
    
     unsigned short fat0[fatClusterSize];
@@ -131,7 +132,7 @@ int main(int argc, char** argv) {
 	
     verifyFats(fatClusterSize, fat0, fat1);
     
-    //copyFat0(fat0pos, fatClusterSize, fat_file, fat1);
+    //copyFat(fat0pos, fatClusterSize, fat_file, fat1);
     
     return (EXIT_SUCCESS);
 }
