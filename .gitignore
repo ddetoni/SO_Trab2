@@ -16,3 +16,8 @@
 *.exe
 *.out
 *.app
+
+# Other
+.dep.inc
+discfat16
+sample.fat16
