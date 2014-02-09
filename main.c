@@ -58,6 +58,25 @@ int emptyBlocks(int fatSize, unsigned short* fat){
 	
     return 1;
 }
+/*
+int emptyBlocksWithData(int fatSize, int dataRegionStart, unsigned short* fat, FILE* file){
+	int i, flag = 0;
+	int * dataEntry;	
+	
+	for(i=3; i < fatSize; i++){
+		fseek(file, dataRegionStart+fat[i], SEEK_SET);
+		fread(dataEntry, 32, 1, file);
+		if(dataEntry[i] == 229 && flag == 0){
+			printf("REMOVIDOS %d", i);
+			flag = 1;
+		}else if(dataEntry[i] == 229 && flag > 0){
+			printf(", %d", i);
+		}
+	}
+	printf("\n");
+	
+	return 1;
+}*/
 
 int copyFat(int fatPos,int fatClusterSize, FILE* file, unsigned short * cfat){
     
@@ -129,6 +148,8 @@ int main(int argc, char** argv) {
     int fatClusterSize = fatByteSize/2;
     int fat0pos = reservedRegion;
     int fat1pos = reservedRegion + fatByteSize;
+    int rootDirectoryStart = fat0pos + fatByteSize*2;
+    int dataRegionStart = rootDirectoryStart + ((twoByteToInt(bs->numRootDirs)*32)/twoByteToInt(bs->bytesInSector));
     
     printf("\n	FAT0 position = %d \n", fat0pos);
     printf("	FAT1 position = %d \n", fat1pos);
@@ -145,7 +166,9 @@ int main(int argc, char** argv) {
     
     //copyFat(fat0pos, fatClusterSize, fat_file, fat1);
     
-    emptyBlocks(fatClusterSize, fat0);
+    //emptyBlocks(fatClusterSize, fat0);
+    
+    //emptyBlocksWithData(fatClusterSize, dataRegionStart, fat0, fat_file);
     
     return (EXIT_SUCCESS);
 }
