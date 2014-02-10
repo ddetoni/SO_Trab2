@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 typedef struct {
 	unsigned char jmp[3];
@@ -114,12 +115,20 @@ int printBootSector(bootsector * bs){
     return 1;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
     
     bootsector * bs = malloc(sizeof(bootsector));
     FILE *fat_file;
     
-    if(!(fat_file = fopen("disco","r+")))
+    
+    if(argc != 3)
+    {
+        printf("Argument error.\n");
+        exit(1);
+    }
+    
+    
+    if(!(fat_file = fopen(argv[2],"r+")))
     {
         printf("The file can not be open.\n");
     }
@@ -141,8 +150,6 @@ int main(int argc, char** argv) {
     fread(bs->bootstrap, 480, 1, fat_file);
     fread(bs->sig, 2, 1, fat_file);	
     
-    printBootSector(bs);
-    
     int reservedRegion = twoByteToInt(bs->numResSector) * twoByteToInt(bs->bytesInSector);
     int fatByteSize = twoByteToInt(bs->numSectFat) * twoByteToInt(bs->bytesInSector);\
     int fatClusterSize = fatByteSize/2;
@@ -151,8 +158,8 @@ int main(int argc, char** argv) {
     int rootDirectoryStart = fat0pos + fatByteSize*2;
     int dataRegionStart = rootDirectoryStart + ((twoByteToInt(bs->numRootDirs)*32)/twoByteToInt(bs->bytesInSector));
     
-    printf("\n	FAT0 position = %d \n", fat0pos);
-    printf("	FAT1 position = %d \n", fat1pos);
+    //printf("\n	FAT0 position = %d \n", fat0pos);
+    //printf("	FAT1 position = %d \n", fat1pos);
     
     fseek(fat_file, fat0pos, SEEK_SET);
    
@@ -161,14 +168,36 @@ int main(int argc, char** argv) {
     
     fread(fat0, fatClusterSize, 2, fat_file);
     fread(fat1, fatClusterSize, 2, fat_file);
-	
-    //verifyFats(fatClusterSize, fat0, fat1);
     
-    //copyFat(fat0pos, fatClusterSize, fat_file, fat1);
-    
-    //emptyBlocks(fatClusterSize, fat0);
-    
-    //emptyBlocksWithData(fatClusterSize, dataRegionStart, fat0, fat_file);
+    if (strcmp("-i", argv[1]) == 0)
+    {
+        printBootSector(bs);
+    } else if(strcmp("-vf", argv[1]) == 0)
+    {
+        verifyFats(fatClusterSize, fat0, fat1);
+    }else if(strcmp("-bl", argv[1]) == 0)
+    {
+        emptyBlocks(fatClusterSize, fat0);
+    }else if(strcmp("-bd", argv[1]) == 0)
+    {
+        //emptyBlocksWithData(fatClusterSize, dataRegionStart, fat0, fat_file);
+    }else if(strcmp("-cf1", argv[1]) == 0)
+    {
+        copyFat(fat0pos, fatClusterSize, fat_file, fat1);
+    }else if(strcmp("-cf2", argv[1]) == 0)
+    {
+        copyFat(fat1pos, fatClusterSize, fat_file, fat0);
+    }else if(strcmp("-crp1", argv[1]) == 0)
+    {
+        fatCorrupted(fat0pos, fat_file);
+    }else if(strcmp("-crp2", argv[1]) == 0)
+    {
+        fatCorrupted(fat1pos, fat_file);
+    }else
+    {
+        printf("Wrong argument.\n");
+        exit(1);
+    }
     
     return (EXIT_SUCCESS);
 }
