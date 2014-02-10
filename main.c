@@ -1,10 +1,3 @@
-/* 
- * File:   main.c
- * Author: douglas
- *
- * Created on 23 de Janeiro de 2014, 11:12
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -45,39 +38,42 @@ int verifyFats(int fatClusterSize, unsigned short* f0, unsigned short* f1){
 }
 
 int emptyBlocks(int fatSize, unsigned short* fat){
-	int i, flag = 0;	
-	
-	for(i=3; i < fatSize; i++){
-		if(fat[i] == 0 && flag == 0){
-			printf("LIVRE %d", i);
-			flag = 1;
-		}else if(fat[i] == 0 && flag > 0){
-			printf(", %d", i);
-		}
-	}
-	printf("\n");
+    int i, flag = 0;	
+
+    for(i=3; i < fatSize; i++){
+            if(fat[i] == 0 && flag == 0){
+                    printf("LIVRE %d", i);
+                    flag = 1;
+            }else if(fat[i] == 0 && flag > 0){
+                    printf(", %d", i);
+            }
+    }
+    printf("\n");
 	
     return 1;
 }
-/*
-int emptyBlocksWithData(int fatSize, int dataRegionStart, unsigned short* fat, FILE* file){
-	int i, flag = 0;
-	int * dataEntry;	
+
+int emptyBlocksWithData(int fatSize, int dataRegionStart, unsigned short* fat, 
+        FILE* file){
 	
-	for(i=3; i < fatSize; i++){
-		fseek(file, dataRegionStart+fat[i], SEEK_SET);
-		fread(dataEntry, 32, 1, file);
-		if(dataEntry[i] == 229 && flag == 0){
-			printf("REMOVIDOS %d", i);
-			flag = 1;
-		}else if(dataEntry[i] == 229 && flag > 0){
-			printf(", %d", i);
-		}
-	}
-	printf("\n");
-	
-	return 1;
-}*/
+    int i, flag = 0;
+    unsigned char* dataEntry;	
+    
+    for(i=3; i < fatSize; i++){
+        fseek(file, dataRegionStart+(i*32), SEEK_SET);
+        fread(dataEntry, 32, 1, file);
+    
+        if(dataEntry[0] == 229 && fat[i]!=0 && flag == 0){
+            printf("REMOVIDOS %d",i);
+            flag = 1;
+        }else if(dataEntry[0] == 229 && fat[i]!=0 && flag > 0){
+            printf(", %d",i);
+        }
+    }
+    printf("\n");
+    
+    return 1;
+}
 
 int copyFat(int fatPos,int fatClusterSize, FILE* file, unsigned short * cfat){
     
@@ -155,8 +151,10 @@ int main(int argc, char* argv[]) {
     int fatClusterSize = fatByteSize/2;
     int fat0pos = reservedRegion;
     int fat1pos = reservedRegion + fatByteSize;
-    int rootDirectoryStart = fat0pos + fatByteSize*2;
-    int dataRegionStart = rootDirectoryStart + ((twoByteToInt(bs->numRootDirs)*32)/twoByteToInt(bs->bytesInSector));
+    
+    int rootDirSectorPosition = twoByteToInt(bs->numResSector) + (bs->numFatCopies[0] * twoByteToInt(bs->numSectFat));
+    int dataRegionStart = rootDirSectorPosition + ((twoByteToInt(bs->numRootDirs)*32)/twoByteToInt(bs->bytesInSector));
+    int dirBytePos = rootDirSectorPosition * twoByteToInt(bs->bytesInSector);
     
     //printf("\n	FAT0 position = %d \n", fat0pos);
     //printf("	FAT1 position = %d \n", fat1pos);
@@ -180,7 +178,7 @@ int main(int argc, char* argv[]) {
         emptyBlocks(fatClusterSize, fat0);
     }else if(strcmp("-bd", argv[1]) == 0)
     {
-        //emptyBlocksWithData(fatClusterSize, dataRegionStart, fat0, fat_file);
+        emptyBlocksWithData(fatClusterSize, dirBytePos, fat0, fat_file);
     }else if(strcmp("-cf1", argv[1]) == 0)
     {
         copyFat(fat0pos, fatClusterSize, fat_file, fat1);
